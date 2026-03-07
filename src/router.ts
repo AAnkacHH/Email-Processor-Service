@@ -125,6 +125,10 @@ export async function handleRequest(
       return json(400, { error: 'Missing fields: origin, service, apiKey, from' });
     }
 
+    if (!EMAIL_RE.test(from)) {
+      return json(400, { error: 'Invalid email address in "from"' });
+    }
+
     await kv.set(clientOrigin, { service, apiKey, from });
     return json(201, { message: `Config saved for ${clientOrigin}` });
   }

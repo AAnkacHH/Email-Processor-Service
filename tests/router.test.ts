@@ -197,6 +197,20 @@ describe('Router — Admin /config', () => {
     expect(res.status).toBe(400);
   });
 
+  it('POST /config returns 400 for invalid email in "from"', async () => {
+    const kv = makeMockKv();
+    const req = makeReq(
+      'POST',
+      '/config',
+      { authorization: `Bearer ${ADMIN_SECRET}` },
+      { origin: 'https://ankach.com', service: 'resend', apiKey: 'key', from: 'not-an-email' },
+    );
+    const res = await handleRequest(req, kv, ADMIN_SECRET);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { error: string };
+    expect(body.error).toContain('Invalid email address in "from"');
+  });
+
   it('DELETE /config/:key removes a client', async () => {
     const kv = makeMockKv({ 'https://ankach.com': baseConfig });
     const req = makeReq('DELETE', '/config/https%3A%2F%2Fankach.com', {
