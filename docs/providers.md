@@ -4,10 +4,10 @@
 
 ## Supported Providers
 
-| `service` value | Provider | Free Tier |
-|---|---|---|
-| `resend` | [Resend](https://resend.com) | 3,000 emails/month |
-| `sendgrid` | [SendGrid](https://sendgrid.com) | 100 emails/day |
+| `service` value | Provider                         | Free Tier          |
+| --------------- | -------------------------------- | ------------------ |
+| `resend`        | [Resend](https://resend.com)     | 3,000 emails/month |
+| `sendgrid`      | [SendGrid](https://sendgrid.com) | 100 emails/day     |
 
 ---
 
@@ -143,10 +143,13 @@ describe('MyProvider', () => {
   beforeEach(() => vi.restoreAllMocks());
 
   it('sends successfully', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'abc' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ id: 'abc' }),
+      }),
+    );
 
     const result = await sendViaMyProvider(
       { service: 'myprovider', apiKey: 'key', from: 'a@b.com' },

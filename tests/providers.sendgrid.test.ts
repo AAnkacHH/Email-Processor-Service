@@ -70,4 +70,43 @@ describe('SendGrid Provider', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('Unauthorized');
   });
+
+  it('sends attachments in SendGrid format', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 202, json: async () => ({}) }));
+
+    await sendViaSendgrid(mockConfig, {
+      ...mockPayload,
+      attachments: [{ filename: 'report.pdf', content: 'base64abc==', type: 'application/pdf' }],
+    });
+
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(body.attachments).toHaveLength(1);
+    expect(body.attachments[0]).toEqual({
+      content: 'base64abc==',
+      filename: 'report.pdf',
+      type: 'application/pdf',
+      disposition: 'attachment',
+    });
+  });
+
+  it('uses octet-stream as default MIME type for attachments', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 202, json: async () => ({}) }));
+
+    await sendViaSendgrid(mockConfig, {
+      ...mockPayload,
+      attachments: [{ filename: 'file.bin', content: 'base64==' }], // no type provided
+    });
+
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(body.attachments[0].type).toBe('application/octet-stream');
+  });
+
+  it('omits attachments field when none provided', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 202, json: async () => ({}) }));
+
+    await sendViaSendgrid(mockConfig, mockPayload);
+
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(body.attachments).toBeUndefined();
+  });
 });

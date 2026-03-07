@@ -18,18 +18,18 @@ The server starts with hot reload at `http://localhost:3000`.
 
 ## Available Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server with hot reload (`tsx watch`) |
-| `npm run build` | Compile TypeScript → `dist/` |
-| `npm start` | Run compiled production build |
-| `npm test` | Run all 25 tests |
-| `npm run test:watch` | Watch mode — re-runs tests on change |
-| `npm run test:coverage` | Coverage report via V8 |
-| `npm run lint` | Run ESLint on `src/` and `tests/` |
-| `npm run lint:fix` | Auto-fix ESLint issues |
-| `npm run format` | Auto-format all files with Prettier |
-| `npm run format:check` | Dry-run Prettier check (used in CI) |
+| Command                 | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `npm run dev`           | Start dev server with hot reload (`tsx watch`) |
+| `npm run build`         | Compile TypeScript → `dist/`                   |
+| `npm start`             | Run compiled production build                  |
+| `npm test`              | Run all 25 tests                               |
+| `npm run test:watch`    | Watch mode — re-runs tests on change           |
+| `npm run test:coverage` | Coverage report via V8                         |
+| `npm run lint`          | Run ESLint on `src/` and `tests/`              |
+| `npm run lint:fix`      | Auto-fix ESLint issues                         |
+| `npm run format`        | Auto-format all files with Prettier            |
+| `npm run format:check`  | Dry-run Prettier check (used in CI)            |
 
 ---
 
@@ -87,8 +87,8 @@ npm run format
 
 - Always use `.js` extension in import paths (required for ES modules with Node's `NodeNext` resolution):
   ```ts
-  import { kvGet } from './kv.js';         // ✅
-  import { kvGet } from './kv';            // ❌
+  import { kvGet } from './kv.js'; // ✅
+  import { kvGet } from './kv'; // ❌
   ```
 
 ### Adding a new feature

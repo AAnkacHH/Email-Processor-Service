@@ -12,10 +12,10 @@ Send an email on behalf of a configured origin.
 
 **Headers**
 
-| Header | Required | Value |
-|---|---|---|
-| `Origin` | ✅ | `https://yourdomain.com` |
-| `Content-Type` | ✅ | `application/json` |
+| Header         | Required | Value                    |
+| -------------- | -------- | ------------------------ |
+| `Origin`       | ✅       | `https://yourdomain.com` |
+| `Content-Type` | ✅       | `application/json`       |
 
 **Body**
 
@@ -24,26 +24,42 @@ Send an email on behalf of a configured origin.
   "to": "recipient@example.com",
   "subject": "Hello!",
   "html": "<b>Hello world</b>",
-  "from": "optional-override@yourdomain.com"
+  "from": "optional-override@yourdomain.com",
+  "attachments": [
+    {
+      "filename": "invoice.pdf",
+      "content": "<base64-encoded content>",
+      "type": "application/pdf"
+    }
+  ]
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `to` | `string \| string[]` | ✅ | Recipient(s) |
-| `subject` | `string` | ✅ | Email subject |
-| `html` | `string` | ✅ | HTML body |
-| `from` | `string` | ❌ | Overrides the default sender from config |
+| Field         | Type                 | Required | Description                              |
+| ------------- | -------------------- | -------- | ---------------------------------------- |
+| `to`          | `string \| string[]` | ✅       | Recipient(s)                             |
+| `subject`     | `string`             | ✅       | Email subject                            |
+| `html`        | `string`             | ✅       | HTML body                                |
+| `from`        | `string`             | ❌       | Overrides the default sender from config |
+| `attachments` | `Attachment[]`       | ❌       | List of file attachments (see below)     |
+
+**Attachment object**
+
+| Field      | Type     | Required | Description                                                                |
+| ---------- | -------- | -------- | -------------------------------------------------------------------------- |
+| `filename` | `string` | ✅       | File name shown in the email (e.g. `invoice.pdf`)                          |
+| `content`  | `string` | ✅       | Base64-encoded file content                                                |
+| `type`     | `string` | ❌       | MIME type (e.g. `application/pdf`). Defaults to `application/octet-stream` |
 
 ### Responses
 
-| Status | Meaning |
-|---|---|
-| `200` | Email sent successfully — returns provider response |
-| `400` | Missing required fields (`to`, `subject`, `html`) |
-| `403` | Origin not configured or not allowed |
-| `405` | Method not allowed (use POST) |
-| `502` | Provider rejected the request — check your API key or payload |
+| Status | Meaning                                                       |
+| ------ | ------------------------------------------------------------- |
+| `200`  | Email sent successfully — returns provider response           |
+| `400`  | Missing required fields (`to`, `subject`, `html`)             |
+| `403`  | Origin not configured or not allowed                          |
+| `405`  | Method not allowed (use POST)                                 |
+| `502`  | Provider rejected the request — check your API key or payload |
 
 ### Example
 
@@ -112,12 +128,12 @@ curl -X POST http://localhost:3000/config \
 
 **Body schema**
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `origin` | `string` | ✅ | Full origin URL (`https://yourdomain.com`) |
-| `service` | `"resend" \| "sendgrid"` | ✅ | Email provider |
-| `apiKey` | `string` | ✅ | Provider API key |
-| `from` | `string` | ✅ | Default sender address |
+| Field     | Type                     | Required | Description                                |
+| --------- | ------------------------ | -------- | ------------------------------------------ |
+| `origin`  | `string`                 | ✅       | Full origin URL (`https://yourdomain.com`) |
+| `service` | `"resend" \| "sendgrid"` | ✅       | Email provider                             |
+| `apiKey`  | `string`                 | ✅       | Provider API key                           |
+| `from`    | `string`                 | ✅       | Default sender address                     |
 
 **Response `201`**
 

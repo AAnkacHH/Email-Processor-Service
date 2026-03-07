@@ -10,9 +10,9 @@ Create a `.env` file from the example:
 cp .env.example .env
 ```
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | HTTP port to listen on |
+| Variable       | Default     | Description                                     |
+| -------------- | ----------- | ----------------------------------------------- |
+| `PORT`         | `3000`      | HTTP port to listen on                          |
 | `ADMIN_SECRET` | `change-me` | Bearer token protecting the `/config` admin API |
 
 > ⚠️ Always set a strong `ADMIN_SECRET` in production. The default value is intentionally insecure.
@@ -64,11 +64,13 @@ data/
 The file is read on every request (lightweight for a small number of clients). This is the `src/kv.ts` module.
 
 **Pros:**
+
 - Zero setup — just run `npm run dev`
 - Human-readable, easy to edit manually
 - No external services needed
 
 **Cons:**
+
 - Not suitable for concurrent high-frequency writes
 - Single-server only
 
@@ -131,7 +133,9 @@ const db = new Database('data/config.db');
 db.exec('CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)');
 
 export function kvGet<T>(key: string): T | null {
-  const row = db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as { value: string } | undefined;
+  const row = db.prepare('SELECT value FROM kv WHERE key = ?').get(key) as
+    | { value: string }
+    | undefined;
   return row ? JSON.parse(row.value) : null;
 }
 // ...

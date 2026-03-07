@@ -1,6 +1,6 @@
 {
   "name": "email-processor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Multi-client email sending service with per-origin provider routing",
   "type": "module",
   "scripts": {

@@ -15,6 +15,14 @@ export async function sendViaResend(
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
+      ...(payload.attachments?.length
+        ? {
+            attachments: payload.attachments.map((a) => ({
+              filename: a.filename,
+              content: a.content,
+            })),
+          }
+        : {}),
     }),
   });
 

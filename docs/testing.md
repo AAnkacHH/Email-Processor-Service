@@ -61,7 +61,9 @@ vi.mock('node:fs', async () => {
     default: {
       existsSync: vi.fn((p) => p in store),
       readFileSync: vi.fn((p) => store[p] ?? '{}'),
-      writeFileSync: vi.fn((p, data) => { store[p] = data; }),
+      writeFileSync: vi.fn((p, data) => {
+        store[p] = data;
+      }),
       mkdirSync: vi.fn(),
     },
     // named exports too...
@@ -71,13 +73,13 @@ vi.mock('node:fs', async () => {
 
 **What's tested:**
 
-| Test | Scenario |
-|---|---|
-| Returns `null` for missing key | Empty store |
-| Sets and gets a value | File written and read back |
-| Deletes an existing key | Key removed, file rewritten |
+| Test                               | Scenario                      |
+| ---------------------------------- | ----------------------------- |
+| Returns `null` for missing key     | Empty store                   |
+| Sets and gets a value              | File written and read back    |
+| Deletes an existing key            | Key removed, file rewritten   |
 | Returns `false` for missing delete | No write if key doesn't exist |
-| Lists all entries | Returns full store contents |
+| Lists all entries                  | Returns full store contents   |
 
 ---
 
@@ -86,19 +88,22 @@ vi.mock('node:fs', async () => {
 **Strategy:** Mock global `fetch` with `vi.stubGlobal('fetch', vi.fn(...))`.
 
 ```ts
-vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-  ok: true,
-  json: async () => ({ id: 'resend-id-123' }),
-}));
+vi.stubGlobal(
+  'fetch',
+  vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ id: 'resend-id-123' }),
+  }),
+);
 ```
 
 **What's tested:**
 
-| Test | Scenario |
-|---|---|
-| Sends successfully | Verifies URL, Authorization header, body fields |
-| Uses `payload.from` when provided | Overrides config `from` address |
-| Returns `success: false` on non-ok response | API returns error JSON |
+| Test                                        | Scenario                                        |
+| ------------------------------------------- | ----------------------------------------------- |
+| Sends successfully                          | Verifies URL, Authorization header, body fields |
+| Uses `payload.from` when provided           | Overrides config `from` address                 |
+| Returns `success: false` on non-ok response | API returns error JSON                          |
 
 ---
 
@@ -113,12 +118,12 @@ vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 202, json: async () =
 
 **What's tested:**
 
-| Test | Scenario |
-|---|---|
-| Sends successfully | 202 response → `{ message: "Email queued" }` |
-| Single recipient format | `to` string → `[{ email }]` personalization |
-| Multiple recipients | `to` array → multi-entry personalization |
-| Returns `success: false` on non-202 | API key error, bad request, etc. |
+| Test                                | Scenario                                     |
+| ----------------------------------- | -------------------------------------------- |
+| Sends successfully                  | 202 response → `{ message: "Email queued" }` |
+| Single recipient format             | `to` string → `[{ email }]` personalization  |
+| Multiple recipients                 | `to` array → multi-entry personalization     |
+| Returns `success: false` on non-202 | API key error, bad request, etc.             |
 
 ---
 
@@ -133,9 +138,9 @@ vi.mock('../src/providers/sendgrid.js', () => ({ sendViaSendgrid: vi.fn() }));
 
 **What's tested:**
 
-| Test | Scenario |
-|---|---|
-| Dispatches to Resend | `config.service === 'resend'` → calls `sendViaResend` |
+| Test                   | Scenario                                                  |
+| ---------------------- | --------------------------------------------------------- |
+| Dispatches to Resend   | `config.service === 'resend'` → calls `sendViaResend`     |
 | Dispatches to SendGrid | `config.service === 'sendgrid'` → calls `sendViaSendgrid` |
 
 ---
@@ -169,19 +174,19 @@ function makeRes(): { res, code(), body(), headers() } { ... }
 
 **What's tested:**
 
-| Suite | Test | Scenario |
-|---|---|---|
-| `/send` | 403 Forbidden | Origin not in KV |
-| `/send` | 200 + CORS header | Valid origin, email sent |
-| `/send` | 200 OPTIONS preflight | CORS headers returned |
-| `/send` | 400 missing fields | `to`/`subject`/`html` absent |
-| `/send` | 502 provider error | Provider returns `success: false` |
-| `/config GET` | 401 Unauthorized | Missing/wrong bearer token |
-| `/config GET` | 200 list | Returns all KV entries |
-| `/config POST` | 201 created | Calls `kvSet` with correct args |
-| `/config POST` | 400 validation | Missing required fields |
-| `/config DELETE` | 200 deleted | Calls `kvDel`, returns success |
-| `/config DELETE` | 404 not found | `kvDel` returns `false` |
+| Suite            | Test                  | Scenario                          |
+| ---------------- | --------------------- | --------------------------------- |
+| `/send`          | 403 Forbidden         | Origin not in KV                  |
+| `/send`          | 200 + CORS header     | Valid origin, email sent          |
+| `/send`          | 200 OPTIONS preflight | CORS headers returned             |
+| `/send`          | 400 missing fields    | `to`/`subject`/`html` absent      |
+| `/send`          | 502 provider error    | Provider returns `success: false` |
+| `/config GET`    | 401 Unauthorized      | Missing/wrong bearer token        |
+| `/config GET`    | 200 list              | Returns all KV entries            |
+| `/config POST`   | 201 created           | Calls `kvSet` with correct args   |
+| `/config POST`   | 400 validation        | Missing required fields           |
+| `/config DELETE` | 200 deleted           | Calls `kvDel`, returns success    |
+| `/config DELETE` | 404 not found         | `kvDel` returns `false`           |
 
 ---
 

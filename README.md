@@ -99,13 +99,13 @@ email-processor/
 
 ## Documentation
 
-| Document | Description |
-|---|---|
-| [API Reference](docs/api.md) | All HTTP endpoints, request/response schemas |
-| [Configuration](docs/configuration.md) | Env vars, KV store, migrating to Redis |
-| [Providers](docs/providers.md) | Supported providers and how to add new ones |
-| [Testing](docs/testing.md) | Test structure, mocks, coverage, how to run |
-| [Contributing](docs/contributing.md) | Dev workflow, scripts, code style |
+| Document                               | Description                                  |
+| -------------------------------------- | -------------------------------------------- |
+| [API Reference](docs/api.md)           | All HTTP endpoints, request/response schemas |
+| [Configuration](docs/configuration.md) | Env vars, KV store, migrating to Redis       |
+| [Providers](docs/providers.md)         | Supported providers and how to add new ones  |
+| [Testing](docs/testing.md)             | Test structure, mocks, coverage, how to run  |
+| [Contributing](docs/contributing.md)   | Dev workflow, scripts, code style            |
 
 ---
 

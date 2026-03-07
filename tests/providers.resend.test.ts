@@ -73,4 +73,26 @@ describe('Resend Provider', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('Invalid API key');
   });
+
+  it('sends attachments when provided', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
+
+    await sendViaResend(mockConfig, {
+      ...mockPayload,
+      attachments: [{ filename: 'invoice.pdf', content: 'base64string==' }],
+    });
+
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(body.attachments).toHaveLength(1);
+    expect(body.attachments[0]).toEqual({ filename: 'invoice.pdf', content: 'base64string==' });
+  });
+
+  it('omits attachments field when none provided', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
+
+    await sendViaResend(mockConfig, mockPayload);
+
+    const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+    expect(body.attachments).toBeUndefined();
+  });
 });

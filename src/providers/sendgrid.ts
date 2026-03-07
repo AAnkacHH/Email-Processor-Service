@@ -21,6 +21,16 @@ export async function sendViaSendgrid(
       ],
       from: { email: payload.from ?? config.from },
       content: [{ type: 'text/html', value: payload.html }],
+      ...(payload.attachments?.length
+        ? {
+            attachments: payload.attachments.map((a) => ({
+              content: a.content,
+              filename: a.filename,
+              type: a.type ?? 'application/octet-stream',
+              disposition: 'attachment',
+            })),
+          }
+        : {}),
     }),
   });
 
