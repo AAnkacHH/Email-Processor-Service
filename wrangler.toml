@@ -1,0 +1,18 @@
+name = "email-processor"
+main = "src/worker.ts"
+compatibility_date = "2024-01-01"
+
+# KV namespace for client configs (per-origin email provider settings)
+# Create with: wrangler kv:namespace create EMAIL_CONFIG
+# Then paste the returned ID below.
+[[kv_namespaces]]
+binding = "EMAIL_CONFIG"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
+
+# Secrets (stored encrypted, not in this file):
+#   wrangler secret put ADMIN_SECRET
+
+[vars]
+# Non-sensitive env vars can go here, e.g.:
+# PORT is not needed in Workers (Cloudflare manages routing)

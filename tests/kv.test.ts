@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the 'node:fs' module before importing kv.
-// renameSync is required by the atomic write in writeStore.
+// Mock node:fs before importing FileKVStore.
+// renameSync is needed for the atomic write in FileKVStore.writeStore.
 vi.mock('node:fs', async () => {
   const store: Record<string, string> = {};
 
@@ -12,16 +12,7 @@ vi.mock('node:fs', async () => {
     }
   });
 
-  return {
-    default: {
-      existsSync: vi.fn((p: string) => p in store),
-      readFileSync: vi.fn((p: string) => store[p] ?? '{}'),
-      writeFileSync: vi.fn((p: string, data: string) => {
-        store[p] = data;
-      }),
-      mkdirSync: vi.fn(),
-      renameSync,
-    },
+  const impl = {
     existsSync: vi.fn((p: string) => p in store),
     readFileSync: vi.fn((p: string) => store[p] ?? '{}'),
     writeFileSync: vi.fn((p: string, data: string) => {
@@ -30,64 +21,85 @@ vi.mock('node:fs', async () => {
     mkdirSync: vi.fn(),
     renameSync,
   };
+
+  return { default: impl, ...impl };
 });
 
 import fs from 'node:fs';
-import { kvGet, kvSet, kvDel, kvList } from '../src/kv.js';
+import { FileKVStore } from '../src/kv.js';
 
-const mockWriteFileSync = fs.writeFileSync as ReturnType<typeof vi.fn>;
-const mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
 const mockExistsSync = fs.existsSync as ReturnType<typeof vi.fn>;
+const mockReadFileSync = fs.readFileSync as ReturnType<typeof vi.fn>;
+const mockWriteFileSync = fs.writeFileSync as ReturnType<typeof vi.fn>;
 
-describe('KV Store', () => {
+describe('FileKVStore', () => {
+  let kv: FileKVStore;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock FS to empty state
+    // Fresh instance per test — cache is per-instance, so isolation is automatic
+    kv = new FileKVStore();
+    // Default: empty file system (no config.json)
     mockExistsSync.mockReturnValue(false);
     mockReadFileSync.mockReturnValue('{}');
-    // Bust the in-memory cache: with existsSync returning false, the next
-    // call to readStore() will populate _cache with {} from the mock.
-    kvGet('__cache_reset__');
   });
 
-  it('returns null for a missing key', () => {
-    const result = kvGet('https://missing.com');
+  it('returns null for a missing key', async () => {
+    const result = await kv.get('https://missing.com');
     expect(result).toBeNull();
   });
 
-  it('sets and gets a value', () => {
+  it('sets and gets a value (cache path)', async () => {
     const config = { service: 'resend', apiKey: 're_123', from: 'a@b.com' };
-
-    // After kvSet the cache holds the new value directly — no extra mock needed
-    kvSet('https://ankach.com', config);
+    await kv.set('https://ankach.com', config);
     expect(mockWriteFileSync).toHaveBeenCalledOnce();
 
-    const result = kvGet<typeof config>('https://ankach.com');
+    // get() reads from in-memory cache — no second fs call needed
+    const result = await kv.get<typeof config>('https://ankach.com');
     expect(result).toEqual(config);
   });
 
-  it('deletes an existing key', () => {
-    // Pre-populate the cache via kvSet
-    kvSet('https://ankach.com', { service: 'resend' });
-    mockWriteFileSync.mockClear(); // clear the set() write call
+  it('deletes an existing key', async () => {
+    await kv.set('https://ankach.com', { service: 'resend' });
+    mockWriteFileSync.mockClear();
 
-    const deleted = kvDel('https://ankach.com');
+    const deleted = await kv.del('https://ankach.com');
     expect(deleted).toBe(true);
     expect(mockWriteFileSync).toHaveBeenCalledOnce();
   });
 
-  it('returns false when deleting a missing key', () => {
-    const deleted = kvDel('https://notexist.com');
+  it('returns false when deleting a missing key', async () => {
+    const deleted = await kv.del('https://notexist.com');
     expect(deleted).toBe(false);
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
-  it('lists all entries', () => {
-    kvSet('https://ankach.com', { service: 'resend' });
-    kvSet('https://lugixbox.cz', { service: 'sendgrid' });
+  it('lists all entries', async () => {
+    await kv.set('https://ankach.com', { service: 'resend' });
+    await kv.set('https://lugixbox.cz', { service: 'sendgrid' });
 
-    const list = kvList();
+    const list = await kv.list();
     expect(Object.keys(list)).toHaveLength(2);
     expect(list['https://ankach.com']).toEqual({ service: 'resend' });
+  });
+
+  it('reads from disk on first access (cache miss)', async () => {
+    // Simulate an existing config.json on disk
+    const diskData = { 'https://from-disk.com': { service: 'sendgrid' } };
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockReturnValue(JSON.stringify(diskData));
+
+    const result = await kv.get('https://from-disk.com');
+    expect(result).toEqual({ service: 'sendgrid' });
+    expect(mockReadFileSync).toHaveBeenCalledOnce();
+  });
+
+  it('reads from cache on second access (no extra fs calls)', async () => {
+    mockExistsSync.mockReturnValue(true);
+    mockReadFileSync.mockReturnValue(JSON.stringify({ 'https://ankach.com': { service: 'resend' } }));
+
+    await kv.get('https://ankach.com'); // first: disk
+    await kv.get('https://ankach.com'); // second: cache
+    expect(mockReadFileSync).toHaveBeenCalledOnce();
   });
 });
