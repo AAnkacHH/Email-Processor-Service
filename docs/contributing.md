@@ -14,22 +14,30 @@ npm run dev
 
 The server starts with hot reload at `http://localhost:3000`.
 
+For Cloudflare Workers local development:
+
+```bash
+npm run dev:worker
+```
+
 ---
 
 ## Available Scripts
 
-| Command                 | Description                                    |
-| ----------------------- | ---------------------------------------------- |
-| `npm run dev`           | Start dev server with hot reload (`tsx watch`) |
-| `npm run build`         | Compile TypeScript → `dist/`                   |
-| `npm start`             | Run compiled production build                  |
-| `npm test`              | Run all 25 tests                               |
-| `npm run test:watch`    | Watch mode — re-runs tests on change           |
-| `npm run test:coverage` | Coverage report via V8                         |
-| `npm run lint`          | Run ESLint on `src/` and `tests/`              |
-| `npm run lint:fix`      | Auto-fix ESLint issues                         |
-| `npm run format`        | Auto-format all files with Prettier            |
-| `npm run format:check`  | Dry-run Prettier check (used in CI)            |
+| Command                 | Description                                          |
+| ----------------------- | ---------------------------------------------------- |
+| `npm run dev`           | Start Node.js dev server with hot reload (`tsx watch`) |
+| `npm run dev:worker`    | Start Cloudflare Worker locally (`wrangler dev`)     |
+| `npm run deploy:worker` | Deploy to Cloudflare Workers (`wrangler deploy`)     |
+| `npm run build`         | Compile TypeScript to `dist/`                        |
+| `npm start`             | Run compiled production build                        |
+| `npm test`              | Run all tests                                        |
+| `npm run test:watch`    | Watch mode — re-runs tests on change                 |
+| `npm run test:coverage` | Coverage report via V8                               |
+| `npm run lint`          | Run ESLint on `src/` and `tests/`                    |
+| `npm run lint:fix`      | Auto-fix ESLint issues                               |
+| `npm run format`        | Auto-format all files with Prettier                  |
+| `npm run format:check`  | Dry-run Prettier check (used in CI)                  |
 
 ---
 
@@ -56,8 +64,8 @@ This project enforces consistent code style via ESLint and Prettier.
 - TypeScript: `typescript-eslint` recommended
 - Style: delegated to Prettier via `eslint-config-prettier`
 - Rule highlights:
-  - Unused vars → error (underscore prefix `_arg` to ignore)
-  - `no-explicit-any` → warning (avoid where possible)
+  - Unused vars: error (underscore prefix `_arg` to ignore)
+  - `no-explicit-any`: warning (avoid where possible)
 
 ### Pre-commit workflow
 
@@ -80,15 +88,15 @@ npm run format
 
 ### File naming
 
-- Source files: `camelCase.ts`
-- Test files: `module.submodule.test.ts` (e.g. `providers.resend.test.ts`)
+- Source files: `camelCase.ts` or `kebab-case.ts`
+- Test files: `module.test.ts` (e.g. `kv.test.ts`, `router.test.ts`)
 
 ### Imports
 
 - Always use `.js` extension in import paths (required for ES modules with Node's `NodeNext` resolution):
   ```ts
-  import { kvGet } from './kv.js'; // ✅
-  import { kvGet } from './kv'; // ❌
+  import { FileKVStore } from './kv.js'; // correct
+  import { FileKVStore } from './kv';    // wrong
   ```
 
 ### Adding a new feature
@@ -104,38 +112,49 @@ npm run format
 
 ## Project Architecture
 
+The core router uses Web API `Request`/`Response` and is platform-agnostic. Each platform provides a thin entry point that bridges its runtime to the router.
+
 ```
-HTTP Request
+Platform Entry Point
+     │
+     ├─ Node.js (src/index.ts)
+     │    Converts http.IncomingMessage → Web Request
+     │    Uses FileKVStore (JSON on disk)
+     │
+     └─ Cloudflare Workers (src/worker.ts)
+          Receives native Web Request
+          Uses CloudflareKVStore (CF KV namespace)
      │
      ▼
- src/index.ts          ← starts Node HTTP server
+src/router.ts  ← handleRequest(request, kv, adminSecret)
+     │              Uses Web API Request/Response
      │
-     ▼
- src/router.ts         ← parses URL, method, origin
-     │
-     ├─── /send ──────► src/kv.ts         ← load client config by origin
+     ├─── /send ──────► KVStore        ← load client config by origin
      │                       │
      │                       ▼
      │                 src/providers/
-     │                   index.ts         ← dispatch by config.service
-     │                   resend.ts        ← call Resend API
-     │                   sendgrid.ts      ← call SendGrid API
+     │                   index.ts      ← dispatch by config.service
+     │                   resend.ts     ← call Resend API
+     │                   sendgrid.ts   ← call SendGrid API
      │
-     └─── /config ────► src/kv.ts         ← read/write config entries
+     └─── /config ────► KVStore        ← read/write config entries
 ```
 
 ### Dependency graph
 
 ```
-index.ts
-└── router.ts
-    ├── kv.ts
-    ├── types.ts
-    └── providers/
-        ├── index.ts
-        │   ├── resend.ts
-        │   └── sendgrid.ts
-        └── types.ts
+index.ts (Node.js)          worker.ts (Cloudflare)
+└── router.ts               └── router.ts
+    ├── kv-interface.ts          ├── kv-interface.ts
+    ├── types.ts                 ├── types.ts
+    └── providers/               └── providers/
+        ├── index.ts                 ├── index.ts
+        │   ├── resend.ts            │   ├── resend.ts
+        │   └── sendgrid.ts          │   └── sendgrid.ts
+        └── types.ts                 └── types.ts
+
+kv.ts (FileKVStore)         kv-cloudflare.ts (CloudflareKVStore)
+└── kv-interface.ts         └── kv-interface.ts
 ```
 
 No circular dependencies. Each layer only imports downward.

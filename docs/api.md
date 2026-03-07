@@ -1,6 +1,6 @@
 # API Reference
 
-All requests go to `http://localhost:3000` (or your deployed host).
+All endpoints are the same on both Node.js (`http://localhost:3000`) and Cloudflare Workers (your Worker URL).
 
 ---
 
@@ -14,8 +14,8 @@ Send an email on behalf of a configured origin.
 
 | Header         | Required | Value                    |
 | -------------- | -------- | ------------------------ |
-| `Origin`       | ✅       | `https://yourdomain.com` |
-| `Content-Type` | ✅       | `application/json`       |
+| `Origin`       | yes      | `https://yourdomain.com` |
+| `Content-Type` | yes      | `application/json`       |
 
 **Body**
 
@@ -37,26 +37,26 @@ Send an email on behalf of a configured origin.
 
 | Field         | Type                 | Required | Description                              |
 | ------------- | -------------------- | -------- | ---------------------------------------- |
-| `to`          | `string \| string[]` | ✅       | Recipient(s)                             |
-| `subject`     | `string`             | ✅       | Email subject                            |
-| `html`        | `string`             | ✅       | HTML body                                |
-| `from`        | `string`             | ❌       | Overrides the default sender from config |
-| `attachments` | `Attachment[]`       | ❌       | List of file attachments (see below)     |
+| `to`          | `string \| string[]` | yes      | Recipient(s)                             |
+| `subject`     | `string`             | yes      | Email subject                            |
+| `html`        | `string`             | yes      | HTML body                                |
+| `from`        | `string`             | no       | Overrides the default sender from config |
+| `attachments` | `Attachment[]`       | no       | List of file attachments (see below)     |
 
 **Attachment object**
 
 | Field      | Type     | Required | Description                                                                |
 | ---------- | -------- | -------- | -------------------------------------------------------------------------- |
-| `filename` | `string` | ✅       | File name shown in the email (e.g. `invoice.pdf`)                          |
-| `content`  | `string` | ✅       | Base64-encoded file content                                                |
-| `type`     | `string` | ❌       | MIME type (e.g. `application/pdf`). Defaults to `application/octet-stream` |
+| `filename` | `string` | yes      | File name shown in the email (e.g. `invoice.pdf`)                          |
+| `content`  | `string` | yes      | Base64-encoded file content                                                |
+| `type`     | `string` | no       | MIME type (e.g. `application/pdf`). Defaults to `application/octet-stream` |
 
 ### Responses
 
 | Status | Meaning                                                       |
 | ------ | ------------------------------------------------------------- |
 | `200`  | Email sent successfully — returns provider response           |
-| `400`  | Missing required fields (`to`, `subject`, `html`)             |
+| `400`  | Missing required fields or invalid email address              |
 | `403`  | Origin not configured or not allowed                          |
 | `405`  | Method not allowed (use POST)                                 |
 | `502`  | Provider rejected the request — check your API key or payload |
@@ -102,7 +102,10 @@ Access-Control-Allow-Headers: Content-Type
 
 ## Admin API
 
-All admin routes require a `Bearer` token matching `ADMIN_SECRET` from your `.env`.
+All admin routes require a `Bearer` token matching `ADMIN_SECRET`.
+
+- **Node.js:** set via `.env` file
+- **Cloudflare Workers:** set via `wrangler secret put ADMIN_SECRET`
 
 ```
 Authorization: Bearer <ADMIN_SECRET>
@@ -130,10 +133,10 @@ curl -X POST http://localhost:3000/config \
 
 | Field     | Type                     | Required | Description                                |
 | --------- | ------------------------ | -------- | ------------------------------------------ |
-| `origin`  | `string`                 | ✅       | Full origin URL (`https://yourdomain.com`) |
-| `service` | `"resend" \| "sendgrid"` | ✅       | Email provider                             |
-| `apiKey`  | `string`                 | ✅       | Provider API key                           |
-| `from`    | `string`                 | ✅       | Default sender address                     |
+| `origin`  | `string`                 | yes      | Full origin URL (`https://yourdomain.com`) |
+| `service` | `"resend" \| "sendgrid"` | yes      | Email provider                             |
+| `apiKey`  | `string`                 | yes      | Provider API key                           |
+| `from`    | `string`                 | yes      | Default sender address                     |
 
 **Response `201`**
 
@@ -162,18 +165,18 @@ curl http://localhost:3000/config \
 {
   "https://ankach.com": {
     "service": "resend",
-    "apiKey": "re_xxx",
+    "apiKey": "re_xxx...",
     "from": "noreply@ankach.com"
   },
   "https://lugixbox.cz": {
     "service": "sendgrid",
-    "apiKey": "sg_yyy",
+    "apiKey": "sg_yyy...",
     "from": "info@lugixbox.cz"
   }
 }
 ```
 
-> ⚠️ This exposes API keys. Ensure your `ADMIN_SECRET` is strong and this route is not publicly accessible.
+> API keys are masked in the response (only the first 6 characters are shown).
 
 ---
 
@@ -182,7 +185,7 @@ curl http://localhost:3000/config \
 The `:origin` parameter must be **URL-encoded**.
 
 ```bash
-# https://ankach.com → https%3A%2F%2Fankach.com
+# https://ankach.com -> https%3A%2F%2Fankach.com
 curl -X DELETE "http://localhost:3000/config/https%3A%2F%2Fankach.com" \
   -H "Authorization: Bearer mysecret"
 ```

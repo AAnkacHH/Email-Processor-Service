@@ -131,6 +131,8 @@ In `src/providers/index.ts`:
 
 > **TypeScript exhaustive check:** if you add the type union but forget the `case`, TypeScript will fail to compile — preventing silent runtime bugs.
 
+No changes are needed to `router.ts`, `index.ts`, `worker.ts`, or any KV store implementation — the router and storage are provider-agnostic.
+
 ### 4. Write tests
 
 Add `tests/providers.myprovider.test.ts` following the same pattern as `tests/providers.resend.test.ts`:
