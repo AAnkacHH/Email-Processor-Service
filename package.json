@@ -1,0 +1,17 @@
+{
+  "name": "email-processor",
+  "version": "1.0.0",
+  "description": "Multi-client email sending service with per-origin provider routing",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,165 @@
+import http from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { kvGet, kvSet, kvDel, kvList } from './kv.js';
+import { sendEmail } from './providers/index.js';
+import type { ClientConfig, EmailPayload } from './types.js';
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'change-me';
+
+function json(res: ServerResponse, status: number, body: unknown): void {
+  const payload = JSON.stringify(body);
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload),
+  });
+  res.end(payload);
+}
+
+function text(res: ServerResponse, status: number, body: string): void {
+  res.writeHead(status, { 'Content-Type': 'text/plain' });
+  res.end(body);
+}
+
+function readBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let raw = '';
+    req.on('data', (chunk: Buffer) => (raw += chunk.toString()));
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(raw));
+      } catch {
+        reject(new Error('Invalid JSON'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+function isAdmin(req: IncomingMessage): boolean {
+  const auth = req.headers['authorization'] ?? '';
+  return auth === `Bearer ${ADMIN_SECRET}`;
+}
+
+function getCorsHeaders(origin: string | undefined): Record<string, string> {
+  if (!origin) return {};
+  const config = kvGet<ClientConfig>(origin);
+  if (!config) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
+export async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+  const method = req.method ?? 'GET';
+  const origin = req.headers['origin'];
+
+  // ─── POST /send ───────────────────────────────────────────────────────────
+  if (url.pathname === '/send') {
+    const corsHeaders = getCorsHeaders(origin);
+
+    // CORS preflight
+    if (method === 'OPTIONS') {
+      res.writeHead(200, corsHeaders);
+      res.end();
+      return;
+    }
+
+    if (!origin || !kvGet<ClientConfig>(origin)) {
+      text(res, 403, 'Forbidden');
+      return;
+    }
+
+    if (method !== 'POST') {
+      text(res, 405, 'Method Not Allowed');
+      return;
+    }
+
+    let body: EmailPayload;
+    try {
+      body = (await readBody(req)) as EmailPayload;
+    } catch {
+      json(res, 400, { error: 'Invalid JSON body' });
+      return;
+    }
+
+    if (!body.to || !body.subject || !body.html) {
+      json(res, 400, { error: 'Missing required fields: to, subject, html' });
+      return;
+    }
+
+    const config = kvGet<ClientConfig>(origin)!;
+    const result = await sendEmail(config, body);
+
+    res.writeHead(result.success ? 200 : 502, {
+      ...corsHeaders,
+      'Content-Type': 'application/json',
+    });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  // ─── Admin: GET /config ────────────────────────────────────────────────────
+  if (url.pathname === '/config' && method === 'GET') {
+    if (!isAdmin(req)) {
+      text(res, 401, 'Unauthorized');
+      return;
+    }
+    json(res, 200, kvList());
+    return;
+  }
+
+  // ─── Admin: POST /config ───────────────────────────────────────────────────
+  if (url.pathname === '/config' && method === 'POST') {
+    if (!isAdmin(req)) {
+      text(res, 401, 'Unauthorized');
+      return;
+    }
+
+    let body: { origin: string } & ClientConfig;
+    try {
+      body = (await readBody(req)) as { origin: string } & ClientConfig;
+    } catch {
+      json(res, 400, { error: 'Invalid JSON body' });
+      return;
+    }
+
+    const { origin: clientOrigin, service, apiKey, from } = body;
+
+    if (!clientOrigin || !service || !apiKey || !from) {
+      json(res, 400, { error: 'Missing fields: origin, service, apiKey, from' });
+      return;
+    }
+
+    kvSet(clientOrigin, { service, apiKey, from });
+    json(res, 201, { message: `Config saved for ${clientOrigin}` });
+    return;
+  }
+
+  // ─── Admin: DELETE /config/:key ────────────────────────────────────────────
+  if (url.pathname.startsWith('/config/') && method === 'DELETE') {
+    if (!isAdmin(req)) {
+      text(res, 401, 'Unauthorized');
+      return;
+    }
+
+    const key = decodeURIComponent(url.pathname.replace('/config/', ''));
+    const deleted = kvDel(key);
+
+    if (!deleted) {
+      json(res, 404, { error: `No config found for: ${key}` });
+      return;
+    }
+
+    json(res, 200, { message: `Deleted config for ${key}` });
+    return;
+  }
+
+  // ─── 404 ───────────────────────────────────────────────────────────────────
+  text(res, 404, 'Not Found');
+}
