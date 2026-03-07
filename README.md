@@ -1,111 +1,124 @@
-# Email Processor
+<div align="center">
 
-A lightweight Node.js (TypeScript) email proxy service. Routes emails from multiple client origins to different email providers (Resend, SendGrid) based on per-origin configuration stored in a JSON file.
+# ✉️ Email Processor
 
-## Requirements
+**A lightweight, self-hosted Node.js email proxy service.**  
+Route emails from multiple client origins to different providers — Resend, SendGrid, and more.
 
-- Node.js 18+
-- A Resend or SendGrid API key
+![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Vitest](https://img.shields.io/badge/Tested_with-Vitest-6E9F18?logo=vitest&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-Flat_Config-4B32C3?logo=eslint&logoColor=white)
+![Prettier](https://img.shields.io/badge/Prettier-3.x-F7B93E?logo=prettier&logoColor=black)
+![Zero Dependencies](https://img.shields.io/badge/Runtime_Dependencies-0-brightgreen)
 
-## Setup
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Create environment file
-cp .env.example .env
-# Edit .env: set PORT and ADMIN_SECRET
-
-# 3. Run in dev mode (with hot reload)
-npm run dev
-```
-
-## Environment Variables
-
-| Variable       | Default     | Description                |
-| -------------- | ----------- | -------------------------- |
-| `PORT`         | `3000`      | HTTP port                  |
-| `ADMIN_SECRET` | `change-me` | Bearer token for admin API |
-
-## API
-
-### `POST /send`
-
-Send an email. The `Origin` header must match a configured client.
-
-**Headers:** `Origin: https://yourdomain.com`, `Content-Type: application/json`
-
-```json
-{
-  "to": "recipient@example.com",
-  "subject": "Hello",
-  "html": "<b>Hello world</b>",
-  "from": "optional-override@yourdomain.com"
-}
-```
+</div>
 
 ---
 
-### Admin API (requires `Authorization: Bearer <ADMIN_SECRET>`)
+## What Is This?
 
-#### `POST /config` — Add or update a client
+Email Processor is a **zero-dependency** HTTP service that acts as an email gateway for multiple websites. Each origin (domain) is mapped to its own email provider and API key. No secret API keys in your frontend — just your origin URL.
+
+**Designed as a self-hosted alternative to Cloudflare Email Workers.**
+
+---
+
+## Features
+
+- 🔒 **Origin-gated sending** — only configured domains can send emails
+- 🔁 **Multi-provider support** — Resend and SendGrid out of the box
+- 🗄️ **File-based KV store** — zero setup, swappable for Redis
+- 🛡️ **Admin REST API** — manage client configs at runtime
+- ⚡ **Zero runtime dependencies** — built-in Node.js `fetch` (Node 18+)
+- 🧪 **25 tests** — full mock coverage via Vitest
+- 🎨 **ESLint + Prettier** — consistent code style enforced
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/your-username/email-processor.git
+cd email-processor
+npm install
+cp .env.example .env   # set PORT and ADMIN_SECRET
+npm run dev
+```
+
+### Add your first client
 
 ```bash
 curl -X POST http://localhost:3000/config \
   -H "Authorization: Bearer mysecret" \
   -H "Content-Type: application/json" \
   -d '{
-    "origin": "https://ankach.com",
+    "origin": "https://yoursite.com",
     "service": "resend",
     "apiKey": "re_YOUR_KEY",
-    "from": "noreply@ankach.com"
+    "from": "noreply@yoursite.com"
   }'
 ```
 
-#### `GET /config` — List all clients
+### Send an email from your website
 
-```bash
-curl http://localhost:3000/config \
-  -H "Authorization: Bearer mysecret"
+```js
+await fetch('https://your-service.com/send', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    to: 'user@example.com',
+    subject: 'Hello!',
+    html: '<p>Message from your site</p>',
+  }),
+});
 ```
 
-#### `DELETE /config/:origin` — Remove a client
-
-```bash
-curl -X DELETE "http://localhost:3000/config/https%3A%2F%2Fankach.com" \
-  -H "Authorization: Bearer mysecret"
-```
-
-## Supported Providers
-
-| `service` value | Provider                         |
-| --------------- | -------------------------------- |
-| `resend`        | [Resend](https://resend.com)     |
-| `sendgrid`      | [SendGrid](https://sendgrid.com) |
-
-## Adding a New Provider
-
-1. Create `src/providers/myprovider.ts` implementing `sendViaMyProvider(config, payload): Promise<SendResult>`
-2. Add `'myprovider'` to the `ClientConfig.service` union in `src/types.ts`
-3. Add a `case 'myprovider'` in `src/providers/index.ts`
+---
 
 ## Project Structure
 
 ```
-src/
-  index.ts          — HTTP server entry point
-  router.ts         — Request routing and handlers
-  kv.ts             — File-based key-value store (data/config.json)
-  types.ts          — Shared TypeScript types
-  providers/
-    index.ts        — Provider dispatcher
-    resend.ts       — Resend adapter
-    sendgrid.ts     — SendGrid adapter
-data/
-  config.json       — Client configs (auto-created, gitignored)
+email-processor/
+├── src/
+│   ├── index.ts              # HTTP server entry point
+│   ├── router.ts             # Route handlers (/send, /config)
+│   ├── kv.ts                 # File-based KV store
+│   ├── types.ts              # Shared TypeScript types
+│   └── providers/
+│       ├── index.ts          # Provider dispatcher
+│       ├── resend.ts         # Resend adapter
+│       └── sendgrid.ts       # SendGrid adapter
+├── tests/                    # Vitest test suite (25 tests)
+├── docs/                     # Extended documentation
+├── data/                     # Runtime config — auto-created, gitignored
+└── .env.example
 ```
 
-## Future: Migrating to Redis
+---
 
-Replace `src/kv.ts` with a Redis-backed implementation. The interface (`kvGet`, `kvSet`, `kvDel`, `kvList`) stays the same — no other files need to change.
+## Documentation
+
+| Document | Description |
+|---|---|
+| [API Reference](docs/api.md) | All HTTP endpoints, request/response schemas |
+| [Configuration](docs/configuration.md) | Env vars, KV store, migrating to Redis |
+| [Providers](docs/providers.md) | Supported providers and how to add new ones |
+| [Testing](docs/testing.md) | Test structure, mocks, coverage, how to run |
+| [Contributing](docs/contributing.md) | Dev workflow, scripts, code style |
+
+---
+
+## Roadmap
+
+- [ ] Redis KV adapter
+- [ ] Request logging middleware
+- [ ] Rate limiting per origin
+- [ ] Admin UI (web interface)
+- [ ] Docker / Docker Compose setup
+
+---
+
+## License
+
+MIT
