@@ -1,10 +1,7 @@
-import http from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { kvGet, kvSet, kvDel, kvList } from './kv.js';
 import { sendEmail } from './providers/index.js';
 import type { ClientConfig, EmailPayload } from './types.js';
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? 'change-me';
 
 function json(res: ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
@@ -36,8 +33,9 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 function isAdmin(req: IncomingMessage): boolean {
+  const secret = process.env.ADMIN_SECRET ?? 'change-me';
   const auth = req.headers['authorization'] ?? '';
-  return auth === `Bearer ${ADMIN_SECRET}`;
+  return auth === `Bearer ${secret}`;
 }
 
 function getCorsHeaders(origin: string | undefined): Record<string, string> {
@@ -51,10 +49,7 @@ function getCorsHeaders(origin: string | undefined): Record<string, string> {
   };
 }
 
-export async function handleRequest(
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
+export async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
   const method = req.method ?? 'GET';
   const origin = req.headers['origin'];

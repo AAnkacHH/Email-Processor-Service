@@ -23,9 +23,9 @@ npm run dev
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | HTTP port |
+| Variable       | Default     | Description                |
+| -------------- | ----------- | -------------------------- |
+| `PORT`         | `3000`      | HTTP port                  |
 | `ADMIN_SECRET` | `change-me` | Bearer token for admin API |
 
 ## API
@@ -79,10 +79,10 @@ curl -X DELETE "http://localhost:3000/config/https%3A%2F%2Fankach.com" \
 
 ## Supported Providers
 
-| `service` value | Provider |
-|---|---|
-| `resend` | [Resend](https://resend.com) |
-| `sendgrid` | [SendGrid](https://sendgrid.com) |
+| `service` value | Provider                         |
+| --------------- | -------------------------------- |
+| `resend`        | [Resend](https://resend.com)     |
+| `sendgrid`      | [SendGrid](https://sendgrid.com) |
 
 ## Adding a New Provider
 
