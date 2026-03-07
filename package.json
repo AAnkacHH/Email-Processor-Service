@@ -27,11 +27,5 @@
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.56.1",
     "vitest": "^4.0.18"
-  },
-  "vitest": {
-    "include": [
-      "tests/**/*.test.ts"
-    ],
-    "environment": "node"
   }
 }

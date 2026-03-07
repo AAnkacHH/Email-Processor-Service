@@ -17,10 +17,18 @@ function text(res: ServerResponse, status: number, body: string): void {
   res.end(body);
 }
 
+const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
+
 function readBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let raw = '';
-    req.on('data', (chunk: Buffer) => (raw += chunk.toString()));
+    req.on('data', (chunk: Buffer) => {
+      raw += chunk.toString();
+      if (Buffer.byteLength(raw) > MAX_BODY_BYTES) {
+        req.destroy();
+        reject(new Error('Payload too large'));
+      }
+    });
     req.on('end', () => {
       try {
         resolve(JSON.parse(raw));
@@ -33,9 +41,24 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 function isAdmin(req: IncomingMessage): boolean {
-  const secret = process.env.ADMIN_SECRET ?? 'change-me';
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) {
+    throw new Error('ADMIN_SECRET environment variable is not set');
+  }
   const auth = req.headers['authorization'] ?? '';
   return auth === `Bearer ${secret}`;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function maskConfigs(store: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(store).map(([origin, cfg]) => {
+      const c = cfg as { apiKey?: string };
+      if (!c?.apiKey) return [origin, cfg];
+      return [origin, { ...c, apiKey: `${c.apiKey.slice(0, 6)}...` }];
+    }),
+  );
 }
 
 function getCorsHeaders(origin: string | undefined): Record<string, string> {
@@ -78,13 +101,20 @@ export async function handleRequest(req: IncomingMessage, res: ServerResponse): 
     let body: EmailPayload;
     try {
       body = (await readBody(req)) as EmailPayload;
-    } catch {
-      json(res, 400, { error: 'Invalid JSON body' });
+    } catch (err) {
+      const tooLarge = err instanceof Error && err.message === 'Payload too large';
+      json(res, tooLarge ? 413 : 400, { error: tooLarge ? 'Request entity too large' : 'Invalid JSON body' });
       return;
     }
 
     if (!body.to || !body.subject || !body.html) {
       json(res, 400, { error: 'Missing required fields: to, subject, html' });
+      return;
+    }
+
+    const recipients = Array.isArray(body.to) ? body.to : [body.to];
+    if (!recipients.every((e) => EMAIL_RE.test(e))) {
+      json(res, 400, { error: 'Invalid email address in "to"' });
       return;
     }
 
@@ -105,7 +135,7 @@ export async function handleRequest(req: IncomingMessage, res: ServerResponse): 
       text(res, 401, 'Unauthorized');
       return;
     }
-    json(res, 200, kvList());
+    json(res, 200, maskConfigs(kvList()));
     return;
   }
 

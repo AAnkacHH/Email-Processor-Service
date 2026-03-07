@@ -176,7 +176,42 @@ describe('Router — POST /send', () => {
 
     expect(code()).toBe(502);
   });
+
+  it('returns 405 for GET on /send with known origin', async () => {
+    (kvGet as ReturnType<typeof vi.fn>).mockReturnValue({
+      service: 'resend',
+      apiKey: 're_key',
+      from: 'a@b.com',
+    });
+    const req = makeReq('GET', '/send', { origin: 'https://ankach.com' });
+    const { res, code } = makeRes();
+
+    await handleRequest(req, res);
+
+    expect(code()).toBe(405);
+  });
+
+  it('returns 400 for invalid email address in "to"', async () => {
+    (kvGet as ReturnType<typeof vi.fn>).mockReturnValue({
+      service: 'resend',
+      apiKey: 're_key',
+      from: 'a@b.com',
+    });
+    const req = makeReq(
+      'POST',
+      '/send',
+      { origin: 'https://ankach.com' },
+      { to: 'not-an-email', subject: 'Hi', html: '<b>x</b>' },
+    );
+    const { res, code, body } = makeRes();
+
+    await handleRequest(req, res);
+
+    expect(code()).toBe(400);
+    expect(JSON.parse(body()).error).toContain('Invalid email');
+  });
 });
+
 
 describe('Router — Admin /config', () => {
   beforeEach(() => {

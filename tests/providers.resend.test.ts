@@ -95,4 +95,13 @@ describe('Resend Provider', () => {
     const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
     expect(body.attachments).toBeUndefined();
   });
+
+  it('handles network errors gracefully', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
+
+    const result = await sendViaResend(mockConfig, mockPayload);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('ECONNREFUSED');
+  });
 });
