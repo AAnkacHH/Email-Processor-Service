@@ -128,6 +128,25 @@ describe('Router — POST /send', () => {
     expect(res.status).toBe(405);
   });
 
+  it('returns 429 when rate limit is exceeded', async () => {
+    const kv = makeMockKv({ 'https://ankach.com': baseConfig });
+    (sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true, data: { id: '1' } });
+
+    const mockRateLimiter = { check: vi.fn().mockResolvedValue(false) };
+
+    const req = makeReq(
+      'POST',
+      '/send',
+      { origin: 'https://ankach.com' },
+      { to: 'u@e.com', subject: 'Hi', html: '<b>x</b>' },
+    );
+    const res = await handleRequest(req, kv, ADMIN_SECRET, mockRateLimiter);
+    expect(res.status).toBe(429);
+    const body = await res.json() as { error: string };
+    expect(body.error).toContain('Rate limit');
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
   it('returns 502 when provider fails', async () => {
     const kv = makeMockKv({ 'https://ankach.com': baseConfig });
     (sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: 'Bad key' });

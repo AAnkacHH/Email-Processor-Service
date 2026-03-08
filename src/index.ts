@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { FileKVStore } from './kv.js';
+import { InMemoryRateLimiter } from './rate-limiter.js';
 import { handleRequest } from './router.js';
 
 // ─── Startup guard ────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // Singleton KV store for the process lifetime
 const kv = new FileKVStore();
+const rateLimiter = new InMemoryRateLimiter(5); // 5 emails/hour/origin
 
 /**
  * Converts a Node.js IncomingMessage to a Web API Request.
@@ -88,7 +90,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Delegate to the platform-agnostic router
-    const webResponse = await handleRequest(webRequest, kv, ADMIN_SECRET!);
+    const webResponse = await handleRequest(webRequest, kv, ADMIN_SECRET!, rateLimiter);
 
     // Convert Web Response → Node.js ServerResponse
     const responseHeaders: Record<string, string> = {};

@@ -6,7 +6,7 @@ import type { KVStore } from './kv-interface.js';
  */
 export interface CFKVNamespace {
   get(key: string, options: { type: 'json' }): Promise<unknown>;
-  put(key: string, value: string): Promise<void>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
   list(): Promise<{ keys: { name: string }[] }>;
 }

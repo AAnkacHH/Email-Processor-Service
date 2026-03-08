@@ -1,4 +1,5 @@
 import { CloudflareKVStore } from './kv-cloudflare.js';
+import { CloudflareRateLimiter } from './rate-limiter.js';
 import { handleRequest } from './router.js';
 import type { CFKVNamespace } from './kv-cloudflare.js';
 
@@ -20,6 +21,7 @@ export default {
     }
 
     const kv = new CloudflareKVStore(env.EMAIL_CONFIG);
-    return handleRequest(request, kv, env.ADMIN_SECRET);
+    const rateLimiter = new CloudflareRateLimiter(env.EMAIL_CONFIG, 5);
+    return handleRequest(request, kv, env.ADMIN_SECRET, rateLimiter);
   },
 };

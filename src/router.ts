@@ -1,4 +1,5 @@
 import type { KVStore } from './kv-interface.js';
+import type { RateLimiter } from './rate-limiter.js';
 import { sendEmail } from './providers/index.js';
 import type { ClientConfig, EmailPayload } from './types.js';
 
@@ -57,6 +58,7 @@ export async function handleRequest(
   request: Request,
   kv: KVStore,
   adminSecret: string,
+  rateLimiter?: RateLimiter,
 ): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method;
@@ -94,6 +96,14 @@ export async function handleRequest(
     const recipients = Array.isArray(body.to) ? body.to : [body.to];
     if (!recipients.every((e) => EMAIL_RE.test(e))) {
       return json(400, { error: 'Invalid email address in "to"' }, corsHeaders);
+    }
+
+    // Rate limit check (after validation, before sending)
+    if (rateLimiter) {
+      const allowed = await rateLimiter.check(origin);
+      if (!allowed) {
+        return json(429, { error: 'Rate limit exceeded. Try again later.' }, corsHeaders);
+      }
     }
 
     const result = await sendEmail(config, body);
