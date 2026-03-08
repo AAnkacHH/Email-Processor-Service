@@ -64,6 +64,7 @@ Send an email on behalf of a configured origin.
 ### Example
 
 ```bash
+# Node.js (Local)
 curl -X POST http://localhost:3000/send \
   -H "Origin: https://ankach.com" \
   -H "Content-Type: application/json" \
@@ -72,6 +73,12 @@ curl -X POST http://localhost:3000/send \
     "subject": "Hello from Ankach",
     "html": "<h1>Hello!</h1><p>This is a test email.</p>"
   }'
+
+# Cloudflare Workers (Production)
+curl -X POST https://email-processor.url/send \
+  -H "Origin: https://ankach.com" \
+  -H "Content-Type: application/json" \
+  ...
 ```
 
 **Success response (Resend)**
@@ -118,7 +125,14 @@ Unauthorized requests return `401 Unauthorized`.
 ### `POST /config` — Add or update a client
 
 ```bash
+# Node.js (Local)
 curl -X POST http://localhost:3000/config \
+  -H "Authorization: Bearer mysecret" \
+  -H "Content-Type: application/json" \
+...
+
+# Cloudflare Workers (Production)
+curl -X POST https://email-processor.ankach-ua.workers.dev/config \
   -H "Authorization: Bearer mysecret" \
   -H "Content-Type: application/json" \
   -d '{
@@ -155,7 +169,12 @@ curl -X POST http://localhost:3000/config \
 ### `GET /config` — List all clients
 
 ```bash
+# Node.js (Local)
 curl http://localhost:3000/config \
+  -H "Authorization: Bearer mysecret"
+
+# Cloudflare Workers (Production)
+curl https://email-processor.ankach-ua.workers.dev/config \
   -H "Authorization: Bearer mysecret"
 ```
 
@@ -186,7 +205,13 @@ The `:origin` parameter must be **URL-encoded**.
 
 ```bash
 # https://ankach.com -> https%3A%2F%2Fankach.com
+
+# Node.js (Local)
 curl -X DELETE "http://localhost:3000/config/https%3A%2F%2Fankach.com" \
+  -H "Authorization: Bearer mysecret"
+
+# Cloudflare Workers (Production)
+curl -X DELETE "https://email-processor.ankach-ua.workers.dev/config/https%3A%2F%2Fankach.com" \
   -H "Authorization: Bearer mysecret"
 ```
 
