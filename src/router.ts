@@ -84,16 +84,16 @@ export async function handleRequest(
     try {
       body = (await request.json()) as EmailPayload;
     } catch {
-      return json(400, { error: 'Invalid JSON body' });
+      return json(400, { error: 'Invalid JSON body' }, corsHeaders);
     }
 
     if (!body.to || !body.subject || !body.html) {
-      return json(400, { error: 'Missing required fields: to, subject, html' });
+      return json(400, { error: 'Missing required fields: to, subject, html' }, corsHeaders);
     }
 
     const recipients = Array.isArray(body.to) ? body.to : [body.to];
     if (!recipients.every((e) => EMAIL_RE.test(e))) {
-      return json(400, { error: 'Invalid email address in "to"' });
+      return json(400, { error: 'Invalid email address in "to"' }, corsHeaders);
     }
 
     const result = await sendEmail(config, body);
