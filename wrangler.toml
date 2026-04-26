@@ -7,11 +7,11 @@ compatibility_date = "2024-01-01"
 # Then paste the returned ID below.
 [[kv_namespaces]]
 binding = "EMAIL_CONFIG"
-id = "YOUR_KV_NAMESPACE_ID"
-preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
+id = "04d644cc18dc4f34bb8d4ffa1c978fbd"
 
 # Secrets (stored encrypted, not in this file):
 #   wrangler secret put ADMIN_SECRET
+#   wrangler secret put SEND_SECRET
 
 [vars]
 # Non-sensitive env vars can go here, e.g.:

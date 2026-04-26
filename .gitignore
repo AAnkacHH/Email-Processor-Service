@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .env
+.wrangler/
 data/config.json

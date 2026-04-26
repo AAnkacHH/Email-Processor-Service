@@ -20,7 +20,7 @@ export async function sendViaSendgrid(
             subject: payload.subject,
           },
         ],
-        from: { email: payload.from ?? config.from },
+        from: { email: config.from },
         content: [{ type: 'text/html', value: payload.html }],
         ...(payload.attachments?.length
           ? {
@@ -46,4 +46,3 @@ export async function sendViaSendgrid(
     return { success: false, error: String(err) };
   }
 }
-

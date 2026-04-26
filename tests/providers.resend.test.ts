@@ -44,7 +44,7 @@ describe('Resend Provider', () => {
     expect(body.subject).toBe('Test Subject');
   });
 
-  it('uses payload.from when provided', async () => {
+  it('ignores payload.from when provided', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -56,7 +56,7 @@ describe('Resend Provider', () => {
     await sendViaResend(mockConfig, { ...mockPayload, from: 'custom@ankach.com' });
 
     const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
-    expect(body.from).toBe('custom@ankach.com');
+    expect(body.from).toBe('noreply@ankach.com');
   });
 
   it('returns failure on non-ok response', async () => {

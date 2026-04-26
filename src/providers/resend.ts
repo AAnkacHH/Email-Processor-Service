@@ -12,7 +12,7 @@ export async function sendViaResend(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: payload.from ?? config.from,
+        from: config.from,
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
@@ -38,4 +38,3 @@ export async function sendViaResend(
     return { success: false, error: String(err) };
   }
 }
-

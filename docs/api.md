@@ -6,25 +6,25 @@ All endpoints are the same on both Node.js (`http://localhost:3000`) and Cloudfl
 
 ## `POST /send`
 
-Send an email on behalf of a configured origin.
+Send an email on behalf of a configured origin. This endpoint is intended for server-side callers such as Nuxt server routes, not direct browser calls.
 
 ### Request
 
 **Headers**
 
-| Header         | Required | Value                    |
-| -------------- | -------- | ------------------------ |
-| `Origin`       | yes      | `https://yourdomain.com` |
-| `Content-Type` | yes      | `application/json`       |
+| Header          | Required | Value                  |
+| --------------- | -------- | ---------------------- |
+| `Authorization` | yes      | `Bearer <SEND_SECRET>` |
+| `Content-Type`  | yes      | `application/json`     |
 
 **Body**
 
 ```json
 {
+  "origin": "https://yourdomain.com",
   "to": "recipient@example.com",
   "subject": "Hello!",
   "html": "<b>Hello world</b>",
-  "from": "optional-override@yourdomain.com",
   "attachments": [
     {
       "filename": "invoice.pdf",
@@ -35,13 +35,13 @@ Send an email on behalf of a configured origin.
 }
 ```
 
-| Field         | Type                 | Required | Description                              |
-| ------------- | -------------------- | -------- | ---------------------------------------- |
-| `to`          | `string \| string[]` | yes      | Recipient(s)                             |
-| `subject`     | `string`             | yes      | Email subject                            |
-| `html`        | `string`             | yes      | HTML body                                |
-| `from`        | `string`             | no       | Overrides the default sender from config |
-| `attachments` | `Attachment[]`       | no       | List of file attachments (see below)     |
+| Field         | Type                 | Required | Description                                                          |
+| ------------- | -------------------- | -------- | -------------------------------------------------------------------- |
+| `origin`      | `string`             | yes      | Configured site origin. Server callers should send this in the body. |
+| `to`          | `string \| string[]` | no       | Recipient(s). Ignored when the stored config defines `to`.           |
+| `subject`     | `string`             | yes      | Email subject                                                        |
+| `html`        | `string`             | yes      | HTML body                                                            |
+| `attachments` | `Attachment[]`       | no       | List of file attachments (see below)                                 |
 
 **Attachment object**
 
@@ -57,6 +57,7 @@ Send an email on behalf of a configured origin.
 | ------ | ------------------------------------------------------------- |
 | `200`  | Email sent successfully — returns provider response           |
 | `400`  | Missing required fields or invalid email address              |
+| `401`  | Missing or invalid `SEND_SECRET` bearer token                 |
 | `403`  | Origin not configured or not allowed                          |
 | `405`  | Method not allowed (use POST)                                 |
 | `502`  | Provider rejected the request — check your API key or payload |
@@ -66,17 +67,17 @@ Send an email on behalf of a configured origin.
 ```bash
 # Node.js (Local)
 curl -X POST http://localhost:3000/send \
-  -H "Origin: https://ankach.com" \
+  -H "Authorization: Bearer sendsecret" \
   -H "Content-Type: application/json" \
   -d '{
-    "to": "user@example.com",
+    "origin": "https://ankach.com",
     "subject": "Hello from Ankach",
     "html": "<h1>Hello!</h1><p>This is a test email.</p>"
   }'
 
 # Cloudflare Workers (Production)
 curl -X POST https://email-processor.url/send \
-  -H "Origin: https://ankach.com" \
+  -H "Authorization: Bearer sendsecret" \
   -H "Content-Type: application/json" \
   ...
 ```
@@ -139,18 +140,20 @@ curl -X POST https://email-processor.ankach-ua.workers.dev/config \
     "origin": "https://ankach.com",
     "service": "resend",
     "apiKey": "re_YOUR_KEY",
-    "from": "noreply@ankach.com"
+    "from": "noreply@ankach.com",
+    "to": "owner@ankach.com"
   }'
 ```
 
 **Body schema**
 
-| Field     | Type                     | Required | Description                                |
-| --------- | ------------------------ | -------- | ------------------------------------------ |
-| `origin`  | `string`                 | yes      | Full origin URL (`https://yourdomain.com`) |
-| `service` | `"resend" \| "sendgrid"` | yes      | Email provider                             |
-| `apiKey`  | `string`                 | yes      | Provider API key                           |
-| `from`    | `string`                 | yes      | Default sender address                     |
+| Field     | Type                     | Required | Description                                     |
+| --------- | ------------------------ | -------- | ----------------------------------------------- |
+| `origin`  | `string`                 | yes      | Full origin URL (`https://yourdomain.com`)      |
+| `service` | `"resend" \| "sendgrid"` | yes      | Email provider                                  |
+| `apiKey`  | `string`                 | yes      | Provider API key                                |
+| `from`    | `string`                 | yes      | Default sender address                          |
+| `to`      | `string \| string[]`     | no       | Centralized recipient allowlist for this origin |
 
 **Response `201`**
 

@@ -8,9 +8,14 @@ if (!process.env.ADMIN_SECRET) {
   console.error('FATAL: ADMIN_SECRET environment variable is required');
   process.exit(1);
 }
+if (!process.env.SEND_SECRET) {
+  console.error('FATAL: SEND_SECRET environment variable is required');
+  process.exit(1);
+}
 
 const PORT = Number(process.env.PORT ?? 3000);
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
+const SEND_SECRET = process.env.SEND_SECRET;
 const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // Singleton KV store for the process lifetime
@@ -83,14 +88,18 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       const tooLarge = err instanceof Error && err.message === 'Payload too large';
       res.writeHead(tooLarge ? 413 : 400, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({ error: tooLarge ? 'Request entity too large' : 'Bad request' }),
-      );
+      res.end(JSON.stringify({ error: tooLarge ? 'Request entity too large' : 'Bad request' }));
       return;
     }
 
     // Delegate to the platform-agnostic router
-    const webResponse = await handleRequest(webRequest, kv, ADMIN_SECRET!, rateLimiter);
+    const webResponse = await handleRequest(
+      webRequest,
+      kv,
+      ADMIN_SECRET!,
+      SEND_SECRET!,
+      rateLimiter,
+    );
 
     // Convert Web Response → Node.js ServerResponse
     const responseHeaders: Record<string, string> = {};

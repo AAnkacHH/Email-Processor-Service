@@ -32,7 +32,7 @@ It runs on two platforms with the same core router:
 
 ## Features
 
-- **Origin-gated sending** — only configured domains can send emails
+- **Authenticated sending** — server-side callers must use `SEND_SECRET`
 - **Multi-provider support** — Resend and SendGrid out of the box
 - **Platform-agnostic core** — same router runs on Node.js and Cloudflare Workers
 - **Pluggable KV store** — `FileKVStore` (Node.js) or `CloudflareKVStore` (Workers), implement `KVStore` for your own backend
@@ -63,6 +63,7 @@ wrangler kv:namespace create EMAIL_CONFIG
 
 # Set the admin secret
 wrangler secret put ADMIN_SECRET
+wrangler secret put SEND_SECRET
 
 # Local dev
 npm run dev:worker
@@ -83,18 +84,22 @@ curl -X POST http://localhost:3000/config \
     "origin": "https://yoursite.com",
     "service": "resend",
     "apiKey": "re_YOUR_KEY",
-    "from": "noreply@yoursite.com"
+    "from": "noreply@yoursite.com",
+    "to": "owner@yoursite.com"
   }'
 ```
 
-### Send an email from your website
+### Send an email from a Nuxt server route
 
 ```js
 await fetch('https://your-service.com/send', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    Authorization: `Bearer ${process.env.EMAIL_PROCESSOR_SEND_SECRET}`,
+    'Content-Type': 'application/json',
+  },
   body: JSON.stringify({
-    to: 'user@example.com',
+    origin: 'https://yoursite.com',
     subject: 'Hello!',
     html: '<p>Message from your site</p>',
   }),

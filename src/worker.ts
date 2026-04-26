@@ -7,9 +7,11 @@ import type { CFKVNamespace } from './kv-cloudflare.js';
 // Configure in wrangler.toml:
 //   - EMAIL_CONFIG: KV namespace binding (stores per-origin configs)
 //   - ADMIN_SECRET: Worker secret (set via `wrangler secret put ADMIN_SECRET`)
+//   - SEND_SECRET: Worker secret (set via `wrangler secret put SEND_SECRET`)
 interface Env {
   EMAIL_CONFIG: CFKVNamespace;
   ADMIN_SECRET: string;
+  SEND_SECRET: string;
 }
 
 // ─── Cloudflare Worker entry point ────────────────────────────────────────────
@@ -19,9 +21,12 @@ export default {
     if (!env.ADMIN_SECRET) {
       return new Response('Server misconfigured: ADMIN_SECRET not set', { status: 500 });
     }
+    if (!env.SEND_SECRET) {
+      return new Response('Server misconfigured: SEND_SECRET not set', { status: 500 });
+    }
 
     const kv = new CloudflareKVStore(env.EMAIL_CONFIG);
     const rateLimiter = new CloudflareRateLimiter(env.EMAIL_CONFIG, 5);
-    return handleRequest(request, kv, env.ADMIN_SECRET, rateLimiter);
+    return handleRequest(request, kv, env.ADMIN_SECRET, env.SEND_SECRET, rateLimiter);
   },
 };

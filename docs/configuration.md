@@ -6,10 +6,10 @@
 
 Email Processor runs on two platforms with the same core router:
 
-| Platform             | KV Backend        | Entry Point     | Config Storage                |
-| -------------------- | ----------------- | --------------- | ----------------------------- |
-| **Node.js**          | `FileKVStore`     | `src/index.ts`  | `data/config.json` (on disk) |
-| **Cloudflare Workers** | `CloudflareKVStore` | `src/worker.ts` | Cloudflare KV namespace       |
+| Platform               | KV Backend          | Entry Point     | Config Storage               |
+| ---------------------- | ------------------- | --------------- | ---------------------------- |
+| **Node.js**            | `FileKVStore`       | `src/index.ts`  | `data/config.json` (on disk) |
+| **Cloudflare Workers** | `CloudflareKVStore` | `src/worker.ts` | Cloudflare KV namespace      |
 
 ---
 
@@ -23,10 +23,11 @@ Create a `.env` file from the example:
 cp .env.example .env
 ```
 
-| Variable       | Default     | Description                                     |
-| -------------- | ----------- | ----------------------------------------------- |
-| `PORT`         | `3000`      | HTTP port to listen on                          |
-| `ADMIN_SECRET` | _(required)_ | Bearer token protecting the `/config` admin API |
+| Variable       | Default      | Description                                                     |
+| -------------- | ------------ | --------------------------------------------------------------- |
+| `PORT`         | `3000`       | HTTP port to listen on                                          |
+| `ADMIN_SECRET` | _(required)_ | Bearer token protecting the `/config` admin API                 |
+| `SEND_SECRET`  | _(required)_ | Bearer token protecting the `/send` API for server-side callers |
 
 > The server will refuse to start without `ADMIN_SECRET` set.
 
@@ -83,6 +84,7 @@ preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
 
    ```bash
    wrangler secret put ADMIN_SECRET
+   wrangler secret put SEND_SECRET
    ```
 
 4. **Deploy:**
@@ -108,6 +110,7 @@ interface ClientConfig {
   service: 'resend' | 'sendgrid';
   apiKey: string;
   from: string;
+  to?: string | string[];
 }
 ```
 
@@ -118,12 +121,14 @@ interface ClientConfig {
   "https://ankach.com": {
     "service": "resend",
     "apiKey": "re_abc123",
-    "from": "noreply@ankach.com"
+    "from": "noreply@ankach.com",
+    "to": "owner@ankach.com"
   },
   "https://lugixbox.cz": {
     "service": "sendgrid",
     "apiKey": "sg_xyz456",
-    "from": "info@lugixbox.cz"
+    "from": "info@lugixbox.cz",
+    "to": ["sales@lugixbox.cz", "support@lugixbox.cz"]
   }
 }
 ```

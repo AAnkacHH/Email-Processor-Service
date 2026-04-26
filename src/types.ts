@@ -2,6 +2,7 @@ export interface ClientConfig {
   service: 'resend' | 'sendgrid';
   apiKey: string;
   from: string;
+  to?: string | string[];
 }
 
 export interface Attachment {
@@ -11,7 +12,8 @@ export interface Attachment {
 }
 
 export interface EmailPayload {
-  to: string | string[];
+  origin?: string;
+  to?: string | string[];
   subject: string;
   html: string;
   from?: string;
