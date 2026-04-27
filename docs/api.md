@@ -150,7 +150,7 @@ curl -X POST https://email-processor.ankach-ua.workers.dev/config \
 | Field     | Type                     | Required | Description                                     |
 | --------- | ------------------------ | -------- | ----------------------------------------------- |
 | `origin`  | `string`                 | yes      | Full origin URL (`https://yourdomain.com`)      |
-| `service` | `"resend" \| "sendgrid"` | yes      | Email provider                                  |
+| `service` | `"resend" \| "sendgrid" \| "brevo"` | yes      | Email provider                                  |
 | `apiKey`  | `string`                 | yes      | Provider API key                                |
 | `from`    | `string`                 | yes      | Default sender address                          |
 | `to`      | `string \| string[]`     | no       | Centralized recipient allowlist for this origin |

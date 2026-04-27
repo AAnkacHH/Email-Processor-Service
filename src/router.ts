@@ -22,7 +22,7 @@ function text(status: number, body: string): Response {
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SERVICES = new Set<ClientConfig['service']>(['resend', 'sendgrid']);
+const SERVICES = new Set<ClientConfig['service']>(['resend', 'sendgrid', 'brevo']);
 
 function hasBearerToken(request: Request, token: string): boolean {
   const auth = request.headers.get('authorization') ?? '';

@@ -1,16 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ClientConfig, EmailPayload } from '../src/types.js';
 
-// Mock both provider modules
+// Mock all provider modules
 vi.mock('../src/providers/resend.js', () => ({
   sendViaResend: vi.fn(),
 }));
 vi.mock('../src/providers/sendgrid.js', () => ({
   sendViaSendgrid: vi.fn(),
 }));
+vi.mock('../src/providers/brevo.js', () => ({
+  sendViaBrevo: vi.fn(),
+}));
 
 import { sendViaResend } from '../src/providers/resend.js';
 import { sendViaSendgrid } from '../src/providers/sendgrid.js';
+import { sendViaBrevo } from '../src/providers/brevo.js';
 import { sendEmail } from '../src/providers/index.js';
 
 const payload: EmailPayload = {
@@ -43,6 +47,19 @@ describe('Provider Dispatcher', () => {
 
     expect(sendViaSendgrid).toHaveBeenCalledWith(config, payload);
     expect(sendViaResend).not.toHaveBeenCalled();
+    expect(sendViaBrevo).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+  });
+
+  it('dispatches to Brevo when service=brevo', async () => {
+    const config: ClientConfig = { service: 'brevo', apiKey: 'xkeysib-key', from: 'a@b.com' };
+    (sendViaBrevo as ReturnType<typeof vi.fn>).mockResolvedValue({ success: true });
+
+    const result = await sendEmail(config, payload);
+
+    expect(sendViaBrevo).toHaveBeenCalledWith(config, payload);
+    expect(sendViaResend).not.toHaveBeenCalled();
+    expect(sendViaSendgrid).not.toHaveBeenCalled();
     expect(result.success).toBe(true);
   });
 });

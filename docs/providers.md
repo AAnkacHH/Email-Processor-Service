@@ -8,6 +8,7 @@
 | --------------- | -------------------------------- | ------------------ |
 | `resend`        | [Resend](https://resend.com)     | 3,000 emails/month |
 | `sendgrid`      | [SendGrid](https://sendgrid.com) | 100 emails/day     |
+| `brevo`         | [Brevo](https://brevo.com)       | 300 emails/day, multi-domain |
 
 ---
 
@@ -65,6 +66,35 @@
 
 ```json
 { "success": true, "data": { "message": "Email queued" } }
+```
+
+---
+
+## Brevo
+
+[Brevo](https://brevo.com) (formerly Sendinblue) supports multiple verified domains on the free tier. The API uses an `api-key` header and a slightly different body shape (`sender`, `htmlContent`, `attachment`).
+
+### Getting an API key
+
+1. Sign up at [brevo.com](https://brevo.com) (phone verification required)
+2. Authenticate your sending domain under **Senders, Domains & Dedicated IPs → Domains** (DKIM via CNAME, DMARC via TXT)
+3. Go to **SMTP & API → API keys & MCP → Generate a new API key**
+
+### Config example
+
+```json
+{
+  "origin": "https://elenamuratovateta.com",
+  "service": "brevo",
+  "apiKey": "xkeysib-xxxxxxxxxxxxxxxx",
+  "from": "noreply@elenamuratovateta.com"
+}
+```
+
+### Success response
+
+```json
+{ "success": true, "data": { "messageId": "<...@smtp-relay.mailin.fr>" } }
 ```
 
 ---

@@ -1,5 +1,5 @@
 export interface ClientConfig {
-  service: 'resend' | 'sendgrid';
+  service: 'resend' | 'sendgrid' | 'brevo';
   apiKey: string;
   from: string;
   to?: string | string[];
