@@ -12,7 +12,10 @@ interface Env {
   EMAIL_CONFIG: CFKVNamespace;
   ADMIN_SECRET: string;
   SEND_SECRET: string;
+  RATE_LIMIT_PER_HOUR?: string;
 }
+
+const DEFAULT_RATE_LIMIT_PER_HOUR = 30;
 
 // ─── Cloudflare Worker entry point ────────────────────────────────────────────
 
@@ -26,7 +29,8 @@ export default {
     }
 
     const kv = new CloudflareKVStore(env.EMAIL_CONFIG);
-    const rateLimiter = new CloudflareRateLimiter(env.EMAIL_CONFIG, 5);
+    const limit = Number(env.RATE_LIMIT_PER_HOUR) || DEFAULT_RATE_LIMIT_PER_HOUR;
+    const rateLimiter = new CloudflareRateLimiter(env.EMAIL_CONFIG, limit);
     return handleRequest(request, kv, env.ADMIN_SECRET, env.SEND_SECRET, rateLimiter);
   },
 };
